@@ -79,7 +79,7 @@ def parse_record(record: Dict[str, Any]) -> Optional[Dict[str, str]]:
         return {
             "URL": target_url,
             "Content": content,
-            "Source": "Tuchtrecht"
+            "Source": "Verdragenbank"
         }
     except Exception as e:
         print(f"Error parsing record: {e}")

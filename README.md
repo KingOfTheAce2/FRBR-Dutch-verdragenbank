@@ -1,16 +1,6 @@
-# Dutch Disciplinary Law - Tuchtrecht Open Data
+# Dutch Treaty Database - Verdragenbank Open Data
 
-This project fetches daily data from the Tuchtrecht SRU endpoint provided by the Dutch government and:
-
-The Tuchtrecht (disciplinary law) corpus spans multiple professional fields:
-
-- **Accountants** – uitspraken van de Accountantskamer
-- **Advocaten** – uitspraken van de Raden van Discipline en het Hof van Discipline
-- **Diergeneeskundigen** – uitspraken van het Veterinair Tuchtcollege en het Veterinair Beroepscollege
-- **Gerechtsdeurwaarders** – uitspraken van de Kamer voor Gerechtsdeurwaarders
-- **Gezondheidszorg** – uitspraken van de Regionale Tuchtcolleges en het Centraal Tuchtcollege voor de Gezondheidszorg
-- **Notarissen** – uitspraken van de Kamers voor het notariaat
-- **Scheepvaart** – uitspraken van het Tuchtcollege voor de Scheepvaart
+This project fetches daily data from the Verdragenbank SRU endpoint provided by the Dutch government and stores them as JSONL shards. The same crawler structure that was used for the Tuchtrecht repository is reused here for the treaties collection.
 
 The crawler performs the following steps:
 
@@ -27,7 +17,7 @@ python3.11 -m pip install -r requirements.txt
 
 ## Daily Fetch Script
 
-Run manually (the crawler processes up to 10,000 records per run by default):
+Run manually (the crawler processes up to 250 records per run by default):
 
 ```bash
 python -m crawler.main
@@ -37,7 +27,7 @@ During execution the crawler prints each processed URL so progress is visible in
 the GitHub Actions log.
 
 Use `python -m crawler.main --reset` to ignore the last run timestamp and crawl the
-entire backlog. The `--max-records` option controls how many rulings are
+entire backlog. The `--max-records` option controls how many records are
 processed in a single run.
 
 Each run appends new JSONL files under `data/`. The timestamp of the last
@@ -55,7 +45,7 @@ Set the following environment variables before running the fetch script:
 * `HF_PRIVATE` – set to `true` to create a private dataset (optional)
 
 The dataset will be created under `HF_DATASET_REPO`, for example
-`vGassen/Dutch-Open-Data-Tuchrecht-Disciplinary-Court-Cases`.
+`vGassen/Dutch-Open-Data-Verdragenbank`.
 
 ## GitHub Actions
 
