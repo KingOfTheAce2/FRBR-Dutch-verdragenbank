@@ -1,5 +1,5 @@
 # crawler/main.py
-# Main entry point for the Tuchtrecht crawler.
+# Main entry point for the Verdragenbank crawler.
 
 import os
 import sys
@@ -19,9 +19,9 @@ from crawler.scrubber import scrub_text
 
 DATA_DIR = "data"
 LAST_UPDATE_FILE = ".last_update"
-BASE_QUERY = "c.product-area==tuchtrecht"
+BASE_QUERY = "c.product-area==verdragenbank"
 RECORDS_PER_SHARD = 1000
-DEFAULT_MAX_RECORDS = 10000
+DEFAULT_MAX_RECORDS = 250
 
 
 def get_last_run_date():
@@ -40,7 +40,7 @@ def save_last_run_date():
 
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Run the Tuchtrecht crawler")
+    parser = argparse.ArgumentParser(description="Run the Verdragenbank crawler")
     parser.add_argument(
         "--reset",
         action="store_true",
@@ -80,7 +80,7 @@ def main() -> None:
 
     # Find the latest shard index to append to it.
     existing_shards = [
-        f for f in os.listdir(DATA_DIR) if f.startswith("tuchtrecht_shard_")
+        f for f in os.listdir(DATA_DIR) if f.startswith("verdragenbank_shard_")
     ]
     if existing_shards:
         shard_index = max(
@@ -88,14 +88,14 @@ def main() -> None:
         )
         # Check if the latest shard is full
         with jsonlines.open(
-            os.path.join(DATA_DIR, f"tuchtrecht_shard_{shard_index:03d}.jsonl")
+            os.path.join(DATA_DIR, f"verdragenbank_shard_{shard_index:03d}.jsonl")
         ) as reader:
             records_in_current_shard = sum(1 for _ in reader)
         if records_in_current_shard >= RECORDS_PER_SHARD:
             shard_index += 1
             records_in_current_shard = 0
 
-    output_file = os.path.join(DATA_DIR, f"tuchtrecht_shard_{shard_index:03d}.jsonl")
+    output_file = os.path.join(DATA_DIR, f"verdragenbank_shard_{shard_index:03d}.jsonl")
     writer = jsonlines.open(output_file, mode="a")
 
     processed_count = 0
@@ -118,7 +118,7 @@ def main() -> None:
                 shard_index += 1
                 records_in_current_shard = 0
                 output_file = os.path.join(
-                    DATA_DIR, f"tuchtrecht_shard_{shard_index:03d}.jsonl"
+                    DATA_DIR, f"verdragenbank_shard_{shard_index:03d}.jsonl"
                 )
                 writer = jsonlines.open(output_file, mode="w")
 
