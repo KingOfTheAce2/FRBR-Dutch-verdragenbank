@@ -45,7 +45,7 @@ def parse_record(record: Dict[str, Any]) -> Optional[Dict[str, str]]:
         A dictionary with "URL", "Content", and "Source", or None if parsing fails.
     """
     try:
-        record_data = record.get('sru:recordData', {}).get('gzd:gzd', {})
+        record_data = record.get('srw:recordData', {}).get('gzd:gzd', {})
         enriched_data = record_data.get('gzd:enrichedData', {})
         
         # Prefer XML URL for full text extraction
