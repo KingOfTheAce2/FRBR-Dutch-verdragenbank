@@ -11,7 +11,7 @@ _SESSION = get_session()
 
 # The Verdragenbank dataset is served under the "vd" FRBR collection.
 # Point the SRU client directly to that endpoint.
-BASE_URL = "https://repository.overheid.nl/frbr/vd/sru"
+BASE_URL = "https://repository.overheid.nl/frbr/vd/"
 PAGE_SIZE = 100 # As per SRU documentation, max is 1000, but we'll use a smaller size
 
 def get_records(query: str, start_date: str = None) -> Iterator[Dict[str, Any]]:
