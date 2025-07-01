@@ -1,6 +1,6 @@
 # Dutch Treaty Database - Verdragenbank Open Data
 
-This project fetches daily data from the Verdragenbank SRU endpoint provided by the Dutch government and stores them as JSONL shards. The crawler accesses the SRU service at `https://repository.overheid.nl/frbr/vd/sru`. The same crawler structure that was used for the Tuchtrecht repository is reused here for the treaties collection.
+This project fetches daily data from the Verdragenbank SRU endpoint provided by the Dutch government and stores them as JSONL shards. The crawler accesses the SRU service at `https://repository.overheid.nl/sru`. The Verdragenbank data is retrieved by querying `c.product-area==vd`. The same crawler structure that was used for the Tuchtrecht repository is reused here for the treaties collection.
 
 The crawler performs the following steps:
 

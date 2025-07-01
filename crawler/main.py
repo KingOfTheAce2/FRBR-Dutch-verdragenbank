@@ -19,7 +19,7 @@ from crawler.scrubber import scrub_text
 
 DATA_DIR = "data"
 LAST_UPDATE_FILE = ".last_update"
-BASE_QUERY = "c.product-area==verdragenbank"
+BASE_QUERY = "c.product-area==vd"
 RECORDS_PER_SHARD = 1000
 DEFAULT_MAX_RECORDS = 250
 
