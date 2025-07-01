@@ -45,9 +45,9 @@ def get_records(query: str, start_date: str = None) -> Iterator[Dict[str, Any]]:
             
             import xmltodict
             data = xmltodict.parse(response.content)
-            
-            search_retrieve_response = data.get('sru:searchRetrieveResponse', {})
-            records = search_retrieve_response.get('sru:records', {}).get('sru:record', [])
+
+            search_retrieve_response = data.get('srw:searchRetrieveResponse', {})
+            records = search_retrieve_response.get('srw:records', {}).get('srw:record', [])
 
             if not records:
                 break
