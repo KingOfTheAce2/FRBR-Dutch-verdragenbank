@@ -1,0 +1,67 @@
+# .github/workflows/crawl.yml
+# This workflow automates the process of crawling the Tuchtrecht repository.
+
+name: Tuchtrecht Crawler
+
+on:
+  # Allows manual triggering of the workflow from the Actions tab in GitHub.
+  workflow_dispatch:
+  # Schedules the workflow to run at 02:00 on every Sunday.
+  schedule:
+    - cron: '0 2 * * 0'
+
+permissions:
+  contents: write
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run crawler
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            python crawler/main.py --reset
+          else
+            python crawler/main.py
+          fi
+
+      - name: Commit and push if it changed
+        run: |
+          git config --global user.name "Tuchtrecht Crawler Bot"
+          git config --global user.email "crawler-bot@users.noreply.github.com"
+          git add data/ .last_update
+          # Commit only if there are changes
+          git diff --staged --quiet || git commit -m "Weekly Tuchtrecht data update"
+          git push
+
+      - name: Upload data to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_DATASET_REPO: ${{ secrets.HF_DATASET_REPO }}
+        run: |
+          pip install huggingface_hub git-lfs
+          git lfs install
+          git clone https://huggingface.co/datasets/${HF_DATASET_REPO} hf-dataset
+          cd hf-dataset
+          git lfs track "*.jsonl"
+          git add .gitattributes
+          git commit -m "Track JSONL shards via Git LFS" || true
+          cd ..
+          cp data/*.jsonl hf-dataset/ || true
+          cd hf-dataset
+          git add .
+          git commit -m "Update dataset from crawler run" || echo "No changes"
+          git push https://user:${HF_TOKEN}@huggingface.co/datasets/${HF_DATASET_REPO} HEAD
