@@ -1,0 +1,9 @@
+# requirements.txt
+# Lists the Python packages required for the crawler to function.
+
+requests
+lxml
+xmltodict
+jsonlines
+python-dateutil
+huggingface_hub
