@@ -53,11 +53,17 @@ def parse_record(record: Dict[str, Any]) -> Optional[Dict[str, str]]:
         if not isinstance(item_urls, list):
             item_urls = [item_urls]
             
+        # Prefer Dutch XML (xml-nl) if available, otherwise fall back to plain XML
         xml_url = None
         for item in item_urls:
-            if item.get('@manifestation') == 'xml':
+            if item.get('@manifestation') == 'xml-nl':
                 xml_url = item.get('#text')
                 break
+        if not xml_url:
+            for item in item_urls:
+                if item.get('@manifestation') == 'xml':
+                    xml_url = item.get('#text')
+                    break
         
         pdf_url = None
         if not xml_url:
