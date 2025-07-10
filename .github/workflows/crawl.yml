@@ -29,13 +29,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          # If xmltodict is not in requirements.txt, add it here or to the file
+          pip install xmltodict huggingface_hub git-lfs
 
       - name: Run crawler
         run: |
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            python crawler/main.py --reset
+            if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            python crawler.py --reset
           else
-            python crawler/main.py
+            python crawler.py
           fi
 
       - name: Commit and push if it changed
@@ -52,7 +54,10 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_DATASET_REPO: ${{ secrets.HF_DATASET_REPO }}
         run: |
-          pip install huggingface_hub git-lfs
+          # The pip install for huggingface_hub and git-lfs can be moved to Install dependencies step
+          # if not already there, for better organization.
+          # For a single file, the `crawler` directory structure is gone.
+          # The git lfs install should be done only once.
           git lfs install
           git clone https://huggingface.co/datasets/${HF_DATASET_REPO} hf-dataset
           cd hf-dataset
