@@ -10,6 +10,8 @@ import xml.etree.ElementTree as ET
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from typing import Iterator, Dict, Any, Optional
+from tempfile import NamedTemporaryFile
+from huggingface_hub import HfApi, hf_hub_upload, HfFolder
 
 # --- From utils.py ---
 def get_session() -> requests.Session:
@@ -240,25 +242,8 @@ ROOT_DIR = Path(__file__).resolve().parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-DATA_DIR = "data"
-LAST_UPDATE_FILE = ".last_update"
 BASE_QUERY = "c.product-area==vd"
-RECORDS_PER_SHARD = 1000
 DEFAULT_MAX_RECORDS = 250
-
-
-def get_last_run_date():
-    """Reads the last run timestamp from the .last_update file."""
-    if os.path.exists(LAST_UPDATE_FILE):
-        with open(LAST_UPDATE_FILE, "r") as f:
-            return f.read().strip()
-    return None
-
-
-def save_last_run_date():
-    """Saves the current timestamp to the .last_update file."""
-    with open(LAST_UPDATE_FILE, "w") as f:
-        f.write(datetime.now(timezone.utc).isoformat())
 
 
 def parse_args() -> argparse.Namespace:
@@ -282,75 +267,53 @@ def main() -> None:
     """Main function to run the crawler."""
     args = parse_args()
 
-    if args.reset and os.path.exists(LAST_UPDATE_FILE):
-        os.remove(LAST_UPDATE_FILE)
+    if args.reset:
+        print("Reset flag specified - fetching full backlog.")
 
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
-
-    last_run_date = None if args.reset else get_last_run_date()
-
-    if last_run_date:
-        print(f"Performing weekly update since last run on: {last_run_date}")
-    else:
-        print("Performing full backlog crawl.")
     print(f"Maximum records this run: {args.max_records}")
 
-    records_iterator = get_records(BASE_QUERY, start_date=last_run_date)
+    records_iterator = get_records(BASE_QUERY, start_date=None)
 
-    shard_index = 0
-    records_in_current_shard = 0
+    hf_token = os.environ.get("HF_TOKEN") or HfFolder.get_token()
+    dataset_repo = os.environ.get("HF_DATASET_REPO")
+    if not dataset_repo:
+        raise RuntimeError("HF_DATASET_REPO environment variable is required")
+    private = os.environ.get("HF_PRIVATE", "false").lower() == "true"
 
-    # Find the latest shard index to append to it.
-    existing_shards = [
-        f for f in os.listdir(DATA_DIR) if f.startswith("verdragenbank_shard_")
-    ]
-    if existing_shards:
-        shard_index = max(
-            [int(f.split("_")[-1].split(".")[0]) for f in existing_shards]
-        )
-        # Check if the latest shard is full
-        with jsonlines.open(
-            os.path.join(DATA_DIR, f"verdragenbank_shard_{shard_index:03d}.jsonl")
-        ) as reader:
-            records_in_current_shard = sum(1 for _ in reader)
-        if records_in_current_shard >= RECORDS_PER_SHARD:
-            shard_index += 1
-            records_in_current_shard = 0
-
-    output_file = os.path.join(DATA_DIR, f"verdragenbank_shard_{shard_index:03d}.jsonl")
-    writer = jsonlines.open(output_file, mode="a")
+    api = HfApi()
+    api.create_repo(repo_id=dataset_repo, repo_type="dataset", token=hf_token, private=private, exist_ok=True)
 
     processed_count = 0
-    for record in records_iterator:
-        parsed = parse_record(record)
-        if parsed:
-            parsed["Content"] = scrub_text(parsed["Content"])
+    with NamedTemporaryFile("w+", delete=False) as tmp:
+        writer = jsonlines.Writer(tmp)
+        for record in records_iterator:
+            parsed = parse_record(record)
+            if parsed:
+                parsed["Content"] = scrub_text(parsed["Content"])
+                writer.write(parsed)
+                processed_count += 1
+                print(f"Saved record {processed_count}: {parsed['URL']}")
+                if processed_count >= args.max_records:
+                    print(
+                        f"Reached max-records limit ({args.max_records}). Stopping early."
+                    )
+                    break
+        writer.close()
+        tmp_path = tmp.name
 
-            writer.write(parsed)
-            processed_count += 1
-            records_in_current_shard += 1
-            print(f"Saved record {processed_count}: {parsed['URL']}")
+    if processed_count > 0:
+        shard_name = f"verdragenbank_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.jsonl"
+        hf_hub_upload(
+            path_or_fileobj=tmp_path,
+            repo_id=dataset_repo,
+            path_in_repo=shard_name,
+            repo_type="dataset",
+            token=hf_token,
+        )
+        print(f"Uploaded {shard_name} with {processed_count} records to {dataset_repo}.")
+        os.unlink(tmp_path)
 
-            if processed_count >= args.max_records:
-                print(f"Reached max-records limit ({args.max_records}). Stopping early.")
-                break
-
-            if records_in_current_shard >= RECORDS_PER_SHARD:
-                writer.close()
-                shard_index += 1
-                records_in_current_shard = 0
-                output_file = os.path.join(
-                    DATA_DIR, f"verdragenbank_shard_{shard_index:03d}.jsonl"
-                )
-                writer = jsonlines.open(output_file, mode="w")
-
-    writer.close()
-
-    print(f"Processed and saved {processed_count} records.")
-
-    if processed_count > 0 or not last_run_date:
-        save_last_run_date()
+    print(f"Processed {processed_count} records.")
 
 
 if __name__ == "__main__":
