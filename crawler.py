@@ -11,7 +11,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from typing import Iterator, Dict, Any, Optional
 from tempfile import NamedTemporaryFile
-from huggingface_hub import HfApi, hf_hub_upload, HfFolder
+from huggingface_hub import HfApi, HfFolder
 
 # --- From utils.py ---
 def get_session() -> requests.Session:
@@ -303,10 +303,10 @@ def main() -> None:
 
     if processed_count > 0:
         shard_name = f"verdragenbank_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.jsonl"
-        hf_hub_upload(
+        api.upload_file(
             path_or_fileobj=tmp_path,
-            repo_id=dataset_repo,
             path_in_repo=shard_name,
+            repo_id=dataset_repo,
             repo_type="dataset",
             token=hf_token,
         )
